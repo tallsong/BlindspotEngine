@@ -1,0 +1,122 @@
+[
+  {
+    "name": "The Lindy Effect",
+    "domain": "Probability/History",
+    "explanation": "The future life expectancy of some non-perishable things like a technology or an idea is proportional to their current age.",
+    "utility": 8
+  },
+  {
+    "name": "Hormesis",
+    "domain": "Biology/Toxicology",
+    "explanation": "A biological phenomenon where a beneficial effect (improved health, stress tolerance, growth) results from exposure to low doses of an agent that is otherwise toxic or lethal when given at higher doses.",
+    "utility": 9
+  },
+  {
+    "name": "Comparative Advantage",
+    "domain": "Economics",
+    "explanation": "The ability of an individual or group to carry out a particular economic activity (such as making a specific product) more efficiently than another activity.",
+    "utility": 9
+  },
+  {
+    "name": "The Map is Not the Territory",
+    "domain": "General Semantics",
+    "explanation": "An abstraction derived from something, or a reaction to it, is not the thing itself.",
+    "utility": 10
+  },
+  {
+    "name": "Pareto Principle",
+    "domain": "Economics",
+    "explanation": "For many outcomes, roughly 80% of consequences come from 20% of causes.",
+    "utility": 10
+  },
+  {
+    "name": "Inversion",
+    "domain": "Mathematics/Philosophy",
+    "explanation": "Solving problems by addressing them backwards. Instead of asking how to achieve X, ask how to avoid non-X.",
+    "utility": 9
+  },
+  {
+    "name": "First Principles Thinking",
+    "domain": "Physics/Philosophy",
+    "explanation": "Breaking a problem down to its most basic elements and then reassembling it from the ground up.",
+    "utility": 10
+  },
+  {
+    "name": "Via Negativa",
+    "domain": "Theology/Philosophy",
+    "explanation": "Improvement by subtraction. Focusing on what to avoid or remove rather than what to add.",
+    "utility": 8
+  },
+  {
+    "name": "Opportunity Cost",
+    "domain": "Economics",
+    "explanation": "The loss of potential gain from other alternatives when one alternative is chosen.",
+    "utility": 10
+  },
+  {
+    "name": "Chesterton's Fence",
+    "domain": "Philosophy",
+    "explanation": "Reforms should not be made until the reasoning behind the existing state of affairs is understood.",
+    "utility": 7
+  },
+  {
+    "name": "Hanlon's Razor",
+    "domain": "Philosophy",
+    "explanation": "Never attribute to malice that which is adequately explained by stupidity.",
+    "utility": 8
+  },
+  {
+    "name": "Entropy",
+    "domain": "Physics",
+    "explanation": "A measure of the disorder or randomness in a closed system, which inevitably increases over time.",
+    "utility": 9
+  },
+  {
+    "name": "Game Theory",
+    "domain": "Mathematics/Economics",
+    "explanation": "The study of mathematical models of strategic interaction among rational decision-makers.",
+    "utility": 9
+  },
+  {
+    "name": "Confirmation Bias",
+    "domain": "Psychology",
+    "explanation": "The tendency to search for, interpret, favor, and recall information in a way that confirms or supports one's prior beliefs or values.",
+    "utility": 10
+  },
+  {
+    "name": "Survivorship Bias",
+    "domain": "Statistics",
+    "explanation": "The logical error of concentrating on the people or things that made it past some selection process and overlooking those that did not, typically because of their lack of visibility.",
+    "utility": 9
+  },
+  {
+    "name": "The OODA Loop",
+    "domain": "Military Strategy",
+    "explanation": "Observe, Orient, Decide, Act. A decision-making cycle developed by military strategist John Boyd.",
+    "utility": 8
+  },
+  {
+    "name": "Critical Mass",
+    "domain": "Physics/Sociology",
+    "explanation": "The minimum amount of something required to start or maintain a venture.",
+    "utility": 7
+  },
+  {
+    "name": "Diminishing Returns",
+    "domain": "Economics",
+    "explanation": "A point at which the level of profits or benefits gained is less than the amount of money or energy invested.",
+    "utility": 9
+  },
+  {
+    "name": "Normal Distribution",
+    "domain": "Statistics",
+    "explanation": "A probability distribution that is symmetric about the mean, showing that data near the mean are more frequent in occurrence than data far from the mean.",
+    "utility": 8
+  },
+  {
+    "name": "Effectuation",
+    "domain": "Entrepreneurship",
+    "explanation": "A logic of thinking that serves entrepreneurs in the processes of opportunity identification and new venture creation, starting with means rather than goals.",
+    "utility": 7
+  }
+]
