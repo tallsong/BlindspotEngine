@@ -17,7 +17,8 @@ export default function Home() {
     setResult("");
 
     try {
-      const response = await fetch("http://localhost:8000/bridge", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const response = await fetch(`${apiUrl}/bridge`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
