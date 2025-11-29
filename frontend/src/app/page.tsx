@@ -2,6 +2,20 @@
 
 import { useState } from "react";
 
+type Question = string;
+
+type QA = {
+  question: string;
+  answer: string;
+};
+
+type ScheduleItem = {
+  time: string;
+  activity: string;
+  description: string;
+  resource_type: string;
+};
+
 export default function Home() {
   const [view, setView] = useState<"onboarding" | "viewing">("onboarding");
   const [expertTopics, setExpertTopics] = useState<string[]>([]);
@@ -30,9 +44,7 @@ export default function Home() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
       const response = await fetch(`${apiUrl}/bridge`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           expert_topics: expertTopics,
         }),
@@ -46,7 +58,7 @@ export default function Home() {
       setEpiphany(data);
       setView("viewing");
     } catch (err: any) {
-      setError(err.message || "An error occurred");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
