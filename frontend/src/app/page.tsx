@@ -17,73 +17,46 @@ type ScheduleItem = {
 };
 
 export default function Home() {
-  const [step, setStep] = useState<"input" | "questions" | "plan">("input");
-
-  // Step 1 State
-  const [knownDomain, setKnownDomain] = useState("");
-  const [targetDomain, setTargetDomain] = useState("");
-  const [focus, setFocus] = useState("");
-
-  // Step 2 State
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<string[]>([]);
-
-  // Step 3 State
-  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
-
-  // UI State
+  const [view, setView] = useState<"onboarding" | "viewing">("onboarding");
+  const [expertTopics, setExpertTopics] = useState<string[]>([]);
+  const [currentTopic, setCurrentTopic] = useState("");
+  const [epiphany, setEpiphany] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-
-  // Handlers
-  const handleStartInterview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(`${apiUrl}/interview/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ known_domain: knownDomain, target_domain: targetDomain, focus: focus || null }),
-      });
-
-      if (!response.ok) throw new Error("Failed to generate questions");
-      const data = await response.json();
-      setQuestions(data.questions);
-      setAnswers(new Array(data.questions.length).fill(""));
-      setStep("questions");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  const addTopic = () => {
+    if (currentTopic.trim() && expertTopics.length < 3) {
+      setExpertTopics([...expertTopics, currentTopic.trim()]);
+      setCurrentTopic("");
     }
   };
 
-  const handleGeneratePlan = async () => {
+  const removeTopic = (index: number) => {
+    setExpertTopics(expertTopics.filter((_, i) => i !== index));
+  };
+
+  const handleGenerate = async () => {
     setLoading(true);
     setError("");
-
-    const qaPairs = questions.map((q, i) => ({ question: q, answer: answers[i] }));
+    setEpiphany(null);
 
     try {
-      const response = await fetch(`${apiUrl}/interview/plan`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const response = await fetch(`${apiUrl}/bridge`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          known_domain: knownDomain,
-          target_domain: targetDomain,
-          focus: focus || null,
-          qa_pairs: qaPairs
+          expert_topics: expertTopics,
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to generate plan");
+      if (!response.ok) {
+        throw new Error("Failed to fetch epiphany");
+      }
+
       const data = await response.json();
-      setSchedule(data.schedule);
-      setStep("plan");
+      setEpiphany(data);
+      setView("viewing");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -91,159 +64,124 @@ export default function Home() {
     }
   };
 
-  const handleAnswerChange = (index: number, value: string) => {
-    const newAnswers = [...answers];
-    newAnswers[index] = value;
-    setAnswers(newAnswers);
+  const handleReset = () => {
+    setView("onboarding");
+    setEpiphany(null);
   };
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "900px", margin: "0 auto" }}>
+    <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "800px", margin: "0 auto" }}>
       <header style={{ textAlign: "center", marginBottom: "3rem" }}>
-        <h1 style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>Blindspot Engine</h1>
-        <p style={{ color: "#666" }}>Bridging the gap between what you know and what you don't.</p>
+        <h1>The Blindspot Engine</h1>
+        <p style={{ color: "#666" }}>Discover your Unknown Unknowns.</p>
       </header>
 
-      {error && (
-        <div style={{ padding: "1rem", backgroundColor: "#fee", color: "red", borderRadius: "8px", marginBottom: "2rem" }}>
-          {error}
+      {view === "onboarding" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          <section>
+            <h2>Step 1: Define Your Expertise</h2>
+            <p>Enter up to 3 topics you know well (e.g., "React", "Gardening", "Physics").</p>
+
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+              <input
+                type="text"
+                value={currentTopic}
+                onChange={(e) => setCurrentTopic(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addTopic()}
+                placeholder="Add a topic..."
+                disabled={expertTopics.length >= 3}
+                style={{ flex: 1, padding: "0.8rem", fontSize: "1rem" }}
+              />
+              <button
+                onClick={addTopic}
+                disabled={expertTopics.length >= 3}
+                style={{ padding: "0.8rem", cursor: "pointer" }}
+              >
+                Add
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {expertTopics.map((topic, idx) => (
+                <div key={idx} style={{
+                  background: "#e0e0e0",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}>
+                  <span>{topic}</span>
+                  <button
+                    onClick={() => removeTopic(idx)}
+                    style={{ border: "none", background: "none", cursor: "pointer", color: "red", fontWeight: "bold" }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <button
+            onClick={handleGenerate}
+            disabled={expertTopics.length === 0 || loading}
+            style={{
+              padding: "1rem",
+              backgroundColor: "#0070f3",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "1.1rem",
+              borderRadius: "4px"
+            }}
+          >
+            {loading ? "Discovering..." : "Reveal My Blindspot"}
+          </button>
+
+          {error && <div style={{ color: "red", textAlign: "center" }}>{error}</div>}
         </div>
       )}
 
-      {/* STEP 1: INPUT */}
-      {step === "input" && (
-        <section style={{ maxWidth: "600px", margin: "0 auto" }}>
-          <h2 style={{ marginBottom: "1.5rem" }}>Where do you want to go?</h2>
-          <form onSubmit={handleStartInterview} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Known Domain (Expertise)</label>
-              <input
-                type="text"
-                value={knownDomain}
-                onChange={(e) => setKnownDomain(e.target.value)}
-                placeholder="e.g. Software Engineering, Jazz Music"
-                required
-                style={{ width: "100%", padding: "1rem", borderRadius: "8px", border: "1px solid #ccc", fontSize: "1rem" }}
-              />
+      {view === "viewing" && epiphany && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2rem" }}>
+          <div style={{
+            border: "1px solid #ccc",
+            borderRadius: "12px",
+            padding: "2rem",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            width: "100%",
+            maxWidth: "600px",
+            background: "#fff"
+          }}>
+            <div style={{ textTransform: "uppercase", fontSize: "0.8rem", letterSpacing: "1px", color: "#666", marginBottom: "0.5rem" }}>
+              From Domain: {epiphany.concept_domain}
             </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Target Domain (Curiosity)</label>
-              <input
-                type="text"
-                value={targetDomain}
-                onChange={(e) => setTargetDomain(e.target.value)}
-                placeholder="e.g. Molecular Biology, Roman History"
-                required
-                style={{ width: "100%", padding: "1rem", borderRadius: "8px", border: "1px solid #ccc", fontSize: "1rem" }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Specific Focus (Optional)</label>
-              <input
-                type="text"
-                value={focus}
-                onChange={(e) => setFocus(e.target.value)}
-                placeholder="e.g. System Scaling, Leadership"
-                style={{ width: "100%", padding: "1rem", borderRadius: "8px", border: "1px solid #ccc", fontSize: "1rem" }}
-              />
-            </div>
+            <h2 style={{ fontSize: "2rem", margin: "0 0 1rem 0" }}>{epiphany.concept_name}</h2>
+
+            <p style={{ fontStyle: "italic", borderLeft: "4px solid #0070f3", paddingLeft: "1rem", margin: "1.5rem 0" }}>
+              "{epiphany.explanation}"
+            </p>
+
+            <h3>The Bridge</h3>
+            <p style={{ lineHeight: "1.6" }}>{epiphany.bridge}</p>
+          </div>
+
+          <div style={{ display: "flex", gap: "1rem" }}>
             <button
-              type="submit"
-              disabled={loading}
-              style={{ padding: "1rem", backgroundColor: "#000", color: "#fff", borderRadius: "8px", border: "none", fontSize: "1.1rem", cursor: "pointer", marginTop: "1rem" }}
+              onClick={handleReset}
+              style={{ padding: "0.8rem 1.5rem", border: "1px solid #ccc", background: "white", cursor: "pointer", borderRadius: "4px" }}
             >
-              {loading ? "Analyzing..." : "Start Discovery"}
+              ← Back
             </button>
-          </form>
-        </section>
-      )}
-
-      {/* STEP 2: QUESTIONS */}
-      {step === "questions" && (
-        <section>
-          <h2 style={{ marginBottom: "1rem" }}>Let's Diagnose Your Blindspots</h2>
-          <p style={{ marginBottom: "2rem", color: "#666" }}>Answer these questions to help us tailor your plan. Be honest - "I don't know" is a valid answer!</p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-            {questions.map((q, idx) => (
-              <div key={idx} style={{ padding: "1.5rem", backgroundColor: "#f9f9f9", borderRadius: "12px" }}>
-                <p style={{ fontWeight: "bold", marginBottom: "1rem", fontSize: "1.1rem" }}>{idx + 1}. {q}</p>
-                <textarea
-                  value={answers[idx]}
-                  onChange={(e) => handleAnswerChange(idx, e.target.value)}
-                  placeholder="Your answer..."
-                  rows={3}
-                  style={{ width: "100%", padding: "1rem", borderRadius: "8px", border: "1px solid #ddd", fontSize: "1rem" }}
-                />
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end" }}>
-             <button
-              onClick={handleGeneratePlan}
-              disabled={loading}
-              style={{ padding: "1rem 2rem", backgroundColor: "#000", color: "#fff", borderRadius: "8px", border: "none", fontSize: "1.1rem", cursor: "pointer" }}
+            <button
+              onClick={handleGenerate}
+               style={{ padding: "0.8rem 1.5rem", backgroundColor: "#0070f3", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
             >
-              {loading ? "Building Schedule..." : "Generate Learning Plan"}
+              Next Discovery
             </button>
           </div>
-        </section>
-      )}
-
-      {/* STEP 3: PLAN (CALENDAR VIEW) */}
-      {step === "plan" && (
-        <section>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-            <h2>Your 1-Day Intensive Plan</h2>
-            <button onClick={() => setStep("input")} style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", background: "white", borderRadius: "4px", cursor: "pointer" }}>
-              Start Over
-            </button>
-          </div>
-
-          <div style={{ display: "grid", gap: "1rem" }}>
-            {schedule.map((item, idx) => (
-              <div key={idx} style={{
-                display: "grid",
-                gridTemplateColumns: "120px 1fr",
-                gap: "1rem",
-                backgroundColor: "#fff",
-                border: "1px solid #eee",
-                borderRadius: "12px",
-                overflow: "hidden",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
-              }}>
-                <div style={{
-                  backgroundColor: "#f0f0f0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "bold",
-                  color: "#333",
-                  padding: "1rem"
-                }}>
-                  {item.time}
-                </div>
-                <div style={{ padding: "1.5rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                    <h3 style={{ margin: 0, fontSize: "1.2rem" }}>{item.activity}</h3>
-                    <span style={{
-                      fontSize: "0.8rem",
-                      padding: "0.2rem 0.6rem",
-                      borderRadius: "100px",
-                      backgroundColor: "#eef",
-                      color: "#0070f3",
-                      fontWeight: "bold"
-                    }}>
-                      {item.resource_type}
-                    </span>
-                  </div>
-                  <p style={{ color: "#555", lineHeight: "1.6", margin: 0 }}>{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        </div>
       )}
     </div>
   );

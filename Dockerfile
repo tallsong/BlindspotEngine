@@ -21,13 +21,8 @@ COPY backend/ .
 # Copy built frontend from Stage 1 to a static directory
 COPY --from=builder /app/out /app/static
 
-# Create a non-root user for security
+# Create a non-root user for security (optional but good practice, especially for HF)
 RUN useradd -m -u 1000 user
-
-# Ensure the user owns the application directory
-# This is crucial for ChromaDB to be able to create its database files
-RUN chown -R user:user /app
-
 USER user
 ENV HOME=/home/user \
 	PATH=/home/user/.local/bin:$PATH
