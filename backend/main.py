@@ -13,7 +13,16 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
+from typing import List, Dict
+
+# Import Vector Engine
+# Ensure backend directory is in path if needed, though running via uvicorn typically handles it
+try:
+    from vector_engine import VectorEngine
+except ImportError:
+    # Try relative import if running as module
+    from .vector_engine import VectorEngine
 
 load_dotenv()
 
@@ -28,10 +37,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize Vector Engine
+# In production, we should handle persistence path more robustly
+base_dir = os.path.dirname(os.path.abspath(__file__))
+engine = VectorEngine(persist_path=os.path.join(base_dir, "chroma_db"))
+json_path = os.path.join(base_dir, "data/concepts.json")
+if os.path.exists(json_path):
+    print("Ingesting/Updating concepts...")
+    engine.ingest_concepts(json_path)
+
 class BridgeRequest(BaseModel):
     known_domain: str
     target_domain: str
     focus: Optional[str] = None
+
+class EpiphanyRequest(BaseModel):
+    expert_topics: List[str]
+
+class EpiphanyResponse(BaseModel):
+    concept_name: str
+    concept_domain: str
+    explanation: str
+    bridge: str
 
 def get_llm():
     if os.getenv("GOOGLE_API_KEY"):
