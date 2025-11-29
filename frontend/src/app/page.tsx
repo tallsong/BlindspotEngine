@@ -28,7 +28,7 @@ export default function Home() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const response = await fetch(`${apiUrl}/epiphany`, {
+      const response = await fetch(`${apiUrl}/bridge`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

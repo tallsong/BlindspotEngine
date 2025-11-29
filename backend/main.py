@@ -108,59 +108,6 @@ async def generate_bridge(request: BridgeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/epiphany")
-async def generate_epiphany(request: EpiphanyRequest):
-    llm = get_llm()
-    if not llm:
-         # Fallback for testing/demo without keys if needed, but per specs we should error
-         raise HTTPException(status_code=500, detail="LLM API key not configured.")
-
-    # 1. Find Unknown Unknown
-    concept_metadata = engine.find_unknown_unknown(request.expert_topics)
-    if not concept_metadata:
-        raise HTTPException(status_code=404, detail="No concepts found in database.")
-
-    concept_name = concept_metadata['name']
-    concept_domain = concept_metadata['domain']
-    concept_explanation = concept_metadata['explanation']
-
-    # 2. Generate Bridge
-    system_message = "You are a polymath tutor. Your goal is to explain a new concept to a user by bridging it to their existing expertise."
-
-    user_topics_str = ", ".join(request.expert_topics)
-
-    user_message = f"""
-    The user is an expert in: {user_topics_str}.
-
-    The concept they need to learn is: "{concept_name}" (from {concept_domain}).
-    Definition: {concept_explanation}
-
-    Task:
-    1. Explain "{concept_name}" clearly.
-    2. Create a powerful metaphor or analogy that explains this concept using their expertise in {user_topics_str}.
-    3. Explain why this concept is a "Blindspot" they should be aware of.
-
-    Return the response as a JSON object with keys: "concept_name", "concept_domain", "explanation", "bridge".
-    """
-
-    parser = JsonOutputParser(pydantic_object=EpiphanyResponse)
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_message),
-        ("user", user_message + "\n\n{format_instructions}"),
-    ])
-
-    chain = prompt | llm | parser
-
-    try:
-        result = chain.invoke({"format_instructions": parser.get_format_instructions()})
-        return result
-    except Exception as e:
-        # Fallback if JSON parsing fails
-        print(f"LLM Error: {e}")
-        # Try to return raw text wrapped if parsing fails, but better to just error for now or retry
-        raise HTTPException(status_code=500, detail=f"Failed to generate bridge: {str(e)}")
-
 # @app.get("/")
 # def read_root():
 #     return {"message": "Blindspot Engine API is running"}
