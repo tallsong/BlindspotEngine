@@ -21,23 +21,6 @@ function App() {
     setStep(3);
   };
 
-  const handleDebugShowPlan = () => {
-    // Mock results for all 10 questions to ensure the calendar renders fully
-    setDiagnosticResults({
-      1: 'no', 2: 'yes', 3: 'somewhat', 4: 'no', 5: 'yes',
-      6: 'no', 7: 'no', 8: 'yes', 9: 'somewhat', 10: 'no'
-    });
-    // Ensure config has some values so the header looks right
-    if (!config.knownDomain) {
-      setConfig({
-        knownDomain: 'Debug Domain',
-        targetDomain: 'Debug Target',
-        goal: 'Debug Goal'
-      });
-    }
-    setStep(3);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -62,15 +45,6 @@ function App() {
               <Calendar className="w-4 h-4 mr-1" />
               3. Plan
             </span>
-
-            {/* Debug Button */}
-            <button
-              onClick={handleDebugShowPlan}
-              className="ml-6 px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 transition-colors border border-gray-300"
-              title="Skip to Calendar Plan for testing"
-            >
-              Debug: Show Plan
-            </button>
           </div>
         </div>
       </header>
