@@ -1,53 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BookOpen, Check, HelpCircle, Clock, ChevronRight } from 'lucide-react';
-
-// --- Domain Knowledge Definitions ---
-const knowledgeDatabase = {
-  1: { // CAP Theorem
-    unknown: [
-      { title: "Distributed Systems Primer", type: "Reading", duration: 1, description: "Introduction to core concepts of distributed computing vs local execution." },
-      { title: "CAP Theorem Real-world Examples", type: "Case Study", duration: 1, description: "Analysis of outages caused by partition tolerance failures." }
-    ],
-    known: [
-      { title: "Advanced CAP: PACELC Theorem", type: "Deep Dive", duration: 1, description: "Going beyond CAP: Trade-offs between latency and consistency when no partition exists." }
-    ]
-  },
-  2: { // Sharding
-    unknown: [
-      { title: "Database Sharding Strategies", type: "Reading", duration: 1, description: "Horizontal vs Vertical scaling. Key-based, Range-based, and Directory-based sharding." },
-      { title: "Implement Consistent Hashing", type: "Coding", duration: 2, description: "Hands-on exercise to understand load balancing and sharding." }
-    ],
-    known: [
-      { title: "Vitess Architecture Deep Dive", type: "Deep Dive", duration: 2, description: "Study how Vitess manages sharding for MySQL at scale." }
-    ]
-  },
-  3: { // Backpressure
-    unknown: [
-      { title: "Understanding Backpressure Patterns", type: "Reading", duration: 1, description: "How systems handle load that exceeds processing capacity. Buffering, Dropping, and Control loops." }
-    ],
-    known: [
-      { title: "Reactive Streams Specification", type: "Deep Dive", duration: 1, description: "Study the standard for asynchronous stream processing with non-blocking back pressure." }
-    ]
-  }
-};
-
-const questions = [
-  {
-    id: 1,
-    text: "Do you understand the trade-offs involved in the CAP theorem?",
-    context: "Distributed Systems Core"
-  },
-  {
-    id: 2,
-    text: "Have you implemented or designed a sharding strategy for a database?",
-    context: "Scalability"
-  },
-  {
-    id: 3,
-    text: "Are you familiar with the concept of 'Backpressure' in stream processing?",
-    context: "Resilience"
-  }
-];
 
 // --- Step 1: Input Form ---
 export const WizardInput = ({ onNext, initialValues }) => {
@@ -131,6 +83,25 @@ export const WizardDiagnostic = ({ config, onComplete }) => {
   const [answers, setAnswers] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
 
+  // Mock questions based on generic domains if specific ones aren't provided
+  const questions = [
+    {
+      id: 1,
+      text: "Do you understand the trade-offs involved in the CAP theorem?",
+      context: "Distributed Systems Core"
+    },
+    {
+      id: 2,
+      text: "Have you implemented or designed a sharding strategy for a database?",
+      context: "Scalability"
+    },
+    {
+      id: 3,
+      text: "Are you familiar with the concept of 'Backpressure' in stream processing?",
+      context: "Resilience"
+    }
+  ];
+
   const handleAnswer = (answer) => {
     const newAnswers = { ...answers, [questions[currentQuestion].id]: answer };
     setAnswers(newAnswers);
@@ -209,57 +180,15 @@ export const WizardDiagnostic = ({ config, onComplete }) => {
 };
 
 // --- Step 3: Calendar Plan ---
-export const WizardCalendar = ({ config, diagnosticResults }) => {
-  const [schedule, setSchedule] = useState([]);
-
-  useEffect(() => {
-    // Generate schedule based on answers
-    const generatedSchedule = [];
-    let currentTime = 9; // Start at 9:00 AM
-
-    const formatTime = (hour) => {
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const h = hour % 12 || 12;
-      return `${h.toString().padStart(2, '0')}:00 ${ampm}`;
-    };
-
-    // Iterate through answers
-    Object.keys(diagnosticResults).forEach(questionId => {
-      const answer = diagnosticResults[questionId];
-      const knowledge = knowledgeDatabase[questionId];
-
-      if (!knowledge) return;
-
-      let tasksToAdd = [];
-      if (answer === 'no' || answer === 'somewhat') {
-        tasksToAdd = knowledge.unknown;
-      } else {
-        tasksToAdd = knowledge.known;
-      }
-
-      tasksToAdd.forEach(task => {
-        generatedSchedule.push({
-          time: formatTime(currentTime),
-          duration: task.duration,
-          title: task.title,
-          type: task.type,
-          description: task.description
-        });
-        currentTime += task.duration;
-      });
-    });
-
-    // Add a final review session
-    generatedSchedule.push({
-      time: formatTime(currentTime),
-      duration: 1,
-      title: "Reflection & Notes",
-      type: "Review",
-      description: "Summarize learnings and identify remaining questions."
-    });
-
-    setSchedule(generatedSchedule);
-  }, [diagnosticResults]);
+export const WizardCalendar = ({ config }) => {
+  // Mock Schedule Data
+  const schedule = [
+    { time: "09:00 AM", duration: 1, title: "Distributed Systems Primer", type: "Reading", description: "Introduction to core concepts of distributed computing vs local execution." },
+    { time: "10:00 AM", duration: 1, title: "The Google File System Paper", type: "Deep Dive", description: "Bridging Distributed Systems -> Frontend storage concepts. Understanding how massive data is stored." },
+    { time: "11:00 AM", duration: 1, title: "Review CAP Theorem Real-world Examples", type: "Case Study", description: "Analysis of outages caused by partition tolerance failures." },
+    { time: "01:00 PM", duration: 2, title: "Implement Consistent Hashing", type: "Coding", description: "Hands-on exercise to understand load balancing and sharding." },
+    { time: "03:00 PM", duration: 1, title: "Reflection & Notes", type: "Review", description: "Summarize learnings and identify remaining questions." },
+  ];
 
   return (
     <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
@@ -291,7 +220,6 @@ export const WizardCalendar = ({ config, diagnosticResults }) => {
                     ${item.type === 'Reading' ? 'bg-blue-100 text-blue-800' :
                       item.type === 'Deep Dive' ? 'bg-purple-100 text-purple-800' :
                       item.type === 'Coding' ? 'bg-green-100 text-green-800' :
-                      item.type === 'Case Study' ? 'bg-orange-100 text-orange-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                     {item.type}
