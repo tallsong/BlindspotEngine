@@ -2,13 +2,6 @@
 
 import { useState } from "react";
 
-type Question = string;
-
-type QA = {
-  question: string;
-  answer: string;
-};
-
 type ScheduleItem = {
   time: string;
   activity: string;
@@ -17,46 +10,94 @@ type ScheduleItem = {
 };
 
 export default function Home() {
-  const [view, setView] = useState<"onboarding" | "viewing">("onboarding");
-  const [expertTopics, setExpertTopics] = useState<string[]>([]);
-  const [currentTopic, setCurrentTopic] = useState("");
-  const [epiphany, setEpiphany] = useState<any>(null);
+  const [step, setStep] = useState<"input" | "questions" | "plan">("input");
+
+  // Step 1 Inputs
+  const [knownDomain, setKnownDomain] = useState("");
+  const [targetDomain, setTargetDomain] = useState("");
+  const [focus, setFocus] = useState("");
+
+  // Step 2 Questions
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
+
+  // Step 3 Plan
+  const [plan, setPlan] = useState<ScheduleItem[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const addTopic = () => {
-    if (currentTopic.trim() && expertTopics.length < 3) {
-      setExpertTopics([...expertTopics, currentTopic.trim()]);
-      setCurrentTopic("");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const handleGenerateQuestions = async () => {
+    if (!knownDomain || !targetDomain) {
+      setError("Please fill in Known Domain and Target Domain.");
+      return;
     }
-  };
 
-  const removeTopic = (index: number) => {
-    setExpertTopics(expertTopics.filter((_, i) => i !== index));
-  };
-
-  const handleGenerate = async () => {
     setLoading(true);
     setError("");
-    setEpiphany(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const response = await fetch(`${apiUrl}/bridge`, {
+      const response = await fetch(`${apiUrl}/generate_questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          expert_topics: expertTopics,
+          known_domain: knownDomain,
+          target_domain: targetDomain,
+          focus: focus,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch epiphany");
+        throw new Error("Failed to generate questions.");
       }
 
       const data = await response.json();
-      setEpiphany(data);
-      setView("viewing");
+      setQuestions(data.questions);
+      setAnswers(new Array(data.questions.length).fill(""));
+      setStep("questions");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGeneratePlan = async () => {
+    // Validate answers?
+    if (answers.some(a => !a.trim())) {
+      setError("Please answer all questions.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    const qaList = questions.map((q, i) => ({
+      question: q,
+      answer: answers[i],
+    }));
+
+    try {
+      const response = await fetch(`${apiUrl}/generate_plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          known_domain: knownDomain,
+          target_domain: targetDomain,
+          focus: focus,
+          qa_list: qaList,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate plan.");
+      }
+
+      const data = await response.json();
+      setPlan(data.schedule);
+      setStep("plan");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -65,8 +106,14 @@ export default function Home() {
   };
 
   const handleReset = () => {
-    setView("onboarding");
-    setEpiphany(null);
+    setStep("input");
+    setKnownDomain("");
+    setTargetDomain("");
+    setFocus("");
+    setQuestions([]);
+    setAnswers([]);
+    setPlan([]);
+    setError("");
   };
 
   return (
@@ -76,56 +123,67 @@ export default function Home() {
         <p style={{ color: "#666" }}>Discover your Unknown Unknowns.</p>
       </header>
 
-      {view === "onboarding" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+      {error && (
+        <div style={{
+          background: "#ffebee",
+          color: "#c62828",
+          padding: "1rem",
+          borderRadius: "4px",
+          marginBottom: "1rem",
+          textAlign: "center"
+        }}>
+          {error}
+        </div>
+      )}
+
+      {step === "input" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           <section>
-            <h2>Step 1: Define Your Expertise</h2>
-            <p>Enter up to 3 topics you know well (e.g., "React", "Gardening", "Physics").</p>
+            <h2>Step 1: Setup Context</h2>
+            <p>Tell us what you know and what you want to learn.</p>
 
-            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-              <input
-                type="text"
-                value={currentTopic}
-                onChange={(e) => setCurrentTopic(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addTopic()}
-                placeholder="Add a topic..."
-                disabled={expertTopics.length >= 3}
-                style={{ flex: 1, padding: "0.8rem", fontSize: "1rem" }}
-              />
-              <button
-                onClick={addTopic}
-                disabled={expertTopics.length >= 3}
-                style={{ padding: "0.8rem", cursor: "pointer" }}
-              >
-                Add
-              </button>
-            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label htmlFor="knownDomain" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Known Domain</label>
+                <input
+                  id="knownDomain"
+                  type="text"
+                  value={knownDomain}
+                  onChange={(e) => setKnownDomain(e.target.value)}
+                  placeholder="e.g., Python Programming"
+                  style={{ width: "100%", padding: "0.8rem", fontSize: "1rem", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
 
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {expertTopics.map((topic, idx) => (
-                <div key={idx} style={{
-                  background: "#e0e0e0",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem"
-                }}>
-                  <span>{topic}</span>
-                  <button
-                    onClick={() => removeTopic(idx)}
-                    style={{ border: "none", background: "none", cursor: "pointer", color: "red", fontWeight: "bold" }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+              <div>
+                <label htmlFor="targetDomain" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Target Domain</label>
+                <input
+                  id="targetDomain"
+                  type="text"
+                  value={targetDomain}
+                  onChange={(e) => setTargetDomain(e.target.value)}
+                  placeholder="e.g., Molecular Biology"
+                  style={{ width: "100%", padding: "0.8rem", fontSize: "1rem", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="focus" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>Focus (Optional)</label>
+                <input
+                  id="focus"
+                  type="text"
+                  value={focus}
+                  onChange={(e) => setFocus(e.target.value)}
+                  placeholder="e.g., Protein Folding"
+                  style={{ width: "100%", padding: "0.8rem", fontSize: "1rem", border: "1px solid #ccc", borderRadius: "4px" }}
+                />
+              </div>
             </div>
           </section>
 
           <button
-            onClick={handleGenerate}
-            disabled={expertTopics.length === 0 || loading}
+            onClick={handleGenerateQuestions}
+            disabled={loading}
             style={{
               padding: "1rem",
               backgroundColor: "#0070f3",
@@ -133,54 +191,123 @@ export default function Home() {
               border: "none",
               cursor: "pointer",
               fontSize: "1.1rem",
-              borderRadius: "4px"
+              borderRadius: "4px",
+              opacity: loading ? 0.7 : 1
             }}
           >
-            {loading ? "Discovering..." : "Reveal My Blindspot"}
+            {loading ? "Generating Questions..." : "Next: Diagnostic Questions"}
           </button>
-
-          {error && <div style={{ color: "red", textAlign: "center" }}>{error}</div>}
         </div>
       )}
 
-      {view === "viewing" && epiphany && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2rem" }}>
-          <div style={{
-            border: "1px solid #ccc",
-            borderRadius: "12px",
-            padding: "2rem",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-            width: "100%",
-            maxWidth: "600px",
-            background: "#fff"
-          }}>
-            <div style={{ textTransform: "uppercase", fontSize: "0.8rem", letterSpacing: "1px", color: "#666", marginBottom: "0.5rem" }}>
-              From Domain: {epiphany.concept_domain}
+      {step === "questions" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <section>
+            <h2>Step 2: Diagnostic Questions</h2>
+            <p>Answer these questions to help us assess your blindspots.</p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              {questions.map((q, idx) => (
+                <div key={idx}>
+                  <p style={{ fontWeight: "bold", marginBottom: "0.5rem" }}>{idx + 1}. {q}</p>
+                  <textarea
+                    value={answers[idx]}
+                    onChange={(e) => {
+                      const newAnswers = [...answers];
+                      newAnswers[idx] = e.target.value;
+                      setAnswers(newAnswers);
+                    }}
+                    placeholder="Your answer..."
+                    rows={3}
+                    style={{ width: "100%", padding: "0.8rem", fontSize: "1rem", border: "1px solid #ccc", borderRadius: "4px" }}
+                  />
+                </div>
+              ))}
             </div>
-            <h2 style={{ fontSize: "2rem", margin: "0 0 1rem 0" }}>{epiphany.concept_name}</h2>
+          </section>
 
-            <p style={{ fontStyle: "italic", borderLeft: "4px solid #0070f3", paddingLeft: "1rem", margin: "1.5rem 0" }}>
-              "{epiphany.explanation}"
-            </p>
+          <button
+            onClick={handleGeneratePlan}
+            disabled={loading}
+            style={{
+              padding: "1rem",
+              backgroundColor: "#0070f3",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "1.1rem",
+              borderRadius: "4px",
+              opacity: loading ? 0.7 : 1
+            }}
+          >
+            {loading ? "Creating Plan..." : "Generate Learning Plan"}
+          </button>
+        </div>
+      )}
 
-            <h3>The Bridge</h3>
-            <p style={{ lineHeight: "1.6" }}>{epiphany.bridge}</p>
-          </div>
+      {step === "plan" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          <section>
+            <h2>Step 3: Your Learning Schedule</h2>
+            <p>A tailored 1-day plan to bridge {knownDomain} and {targetDomain}.</p>
 
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <button
-              onClick={handleReset}
-              style={{ padding: "0.8rem 1.5rem", border: "1px solid #ccc", background: "white", cursor: "pointer", borderRadius: "4px" }}
-            >
-              ← Back
-            </button>
-            <button
-              onClick={handleGenerate}
-               style={{ padding: "0.8rem 1.5rem", backgroundColor: "#0070f3", color: "white", border: "none", cursor: "pointer", borderRadius: "4px" }}
-            >
-              Next Discovery
-            </button>
-          </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {plan.map((item, idx) => (
+                <div key={idx} style={{
+                  display: "flex",
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                }}>
+                  <div style={{
+                    backgroundColor: "#f5f5f5",
+                    padding: "1rem",
+                    width: "100px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                    color: "#555",
+                    borderRight: "1px solid #e0e0e0"
+                  }}>
+                    {item.time}
+                  </div>
+                  <div style={{ padding: "1rem", flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                      <h3 style={{ margin: 0, fontSize: "1.1rem" }}>{item.activity}</h3>
+                      <span style={{
+                        fontSize: "0.8rem",
+                        backgroundColor: "#e3f2fd",
+                        color: "#1565c0",
+                        padding: "0.2rem 0.6rem",
+                        borderRadius: "12px",
+                        height: "fit-content"
+                      }}>
+                        {item.resource_type}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, color: "#666", lineHeight: "1.5" }}>{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <button
+            onClick={handleReset}
+            style={{
+              padding: "1rem",
+              backgroundColor: "#fff",
+              color: "#333",
+              border: "1px solid #ccc",
+              cursor: "pointer",
+              fontSize: "1rem",
+              borderRadius: "4px"
+            }}
+          >
+            Start Over
+          </button>
         </div>
       )}
     </div>
