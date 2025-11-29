@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 import os
@@ -80,6 +81,8 @@ async def generate_bridge(request: BridgeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-def read_root():
-    return {"message": "Blindspot Engine API is running"}
+# @app.get("/")
+# def read_root():
+#     return {"message": "Blindspot Engine API is running"}
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
